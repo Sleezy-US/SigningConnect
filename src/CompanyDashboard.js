@@ -709,9 +709,23 @@ const JobPostFormModal = ({ onClose, onSubmit }) => {
               <ul className="space-y-1 text-gray-600">
                 <li>• End-to-end encryption for all documents</li>
                 <li>• Access restricted to assigned agent only</li>
-                <li>• Automatic deletion after job completion</li>
+                <li>• Automatic deletion 72 hours after signing date</li>
                 <li>• Audit trail for all document access</li>
+                <li>• GDPR and CCPA compliant data handling</li>
               </ul>
+            </div>
+
+            {/* Retention Policy Notice */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-amber-900">Document Retention Policy</h4>
+                  <p className="text-sm text-amber-700 mt-1">
+                    All documents will be permanently deleted 72 hours after the scheduled signing date for security and compliance.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
