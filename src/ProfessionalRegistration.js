@@ -93,10 +93,6 @@ const ProfessionalRegistration = () => {
     }));
   };
 
-  const handleFileUpload = (documentType, file) => {
-    updateFormData('documents', documentType, file);
-  };
-
   const nextStep = () => {
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
