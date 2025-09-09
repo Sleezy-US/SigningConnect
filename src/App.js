@@ -7,23 +7,30 @@ import ProfessionalRegistration from './ProfessionalRegistration';
 import { useState } from 'react';
 
 const LandingPage = ({ onShowLogin, onShowRegister }) => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-    <nav className="bg-white/10 backdrop-blur-md border-b border-white/20">
+  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <nav className="bg-white/90 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-white">SigningConnect</h1>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">SigningConnect</h1>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <button 
               onClick={onShowLogin}
-              className="text-white/80 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Sign In
             </button>
             <button 
               onClick={onShowRegister}
-              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-md text-sm font-medium backdrop-blur-sm transition-all"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
             >
               Get Started
             </button>
@@ -33,69 +40,89 @@ const LandingPage = ({ onShowLogin, onShowRegister }) => (
     </nav>
 
     <div className="relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl"></div>
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 opacity-40">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-100/30 via-transparent to-indigo-100/30"></div>
+        <svg className="absolute top-20 left-20 w-64 h-64 text-blue-100" fill="currentColor" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="50" opacity="0.1"/>
+        </svg>
+        <svg className="absolute bottom-32 right-16 w-48 h-48 text-indigo-100" fill="currentColor" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="50" opacity="0.15"/>
+        </svg>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div className="text-center">
-          <h2 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-            Connect with Professional
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-              Notaries Nationwide
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            Professional Document
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+              Signing Services
             </span>
           </h2>
-          <p className="text-xl text-white/80 mb-12 max-w-3xl mx-auto leading-relaxed">
-            The fastest, most reliable platform for remote notary services and document signing.
-            Professional agents available 24/7 across all 50 states.
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+            Connect with certified notaries and signing agents nationwide. Secure, efficient, 
+            and compliant document execution for real estate, legal, and business transactions.
           </p>
-          
-          {/* Interactive Background Cards */}
-          <div className="flex flex-col lg:flex-row gap-8 justify-center mb-20">
-            {/* Join as Agent Card */}
-            <Link 
-              to="/register-agent"
-              className="group relative"
-            >
-              <div className="relative bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-xl border border-white/20 rounded-2xl p-8 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/25">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-emerald-500/10 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-                <div className="relative">
-                  <div className="w-16 h-16 bg-green-500/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-500/40 transition-colors">
-                    <svg className="w-8 h-8 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </div>
+        
+        {/* Professional Service Cards */}
+        <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
+          {/* Join as Professional Agent */}
+          <Link 
+            to="/register-agent"
+            className="group relative"
+          >
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-3">Join as Signing Agent</h3>
-                  <p className="text-green-100/80 mb-6">Earn $75-200 per signing. Flexible schedule, professional support.</p>
-                  <div className="inline-flex items-center text-green-300 font-semibold group-hover:text-green-200 transition-colors">
-                    Apply Now
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors">
+                    Join as Signing Agent
+                  </h3>
+                  <p className="text-gray-600 mb-4 leading-relaxed">
+                    Become part of our professional network. Flexible scheduling, competitive fees ($75-200 per signing), 
+                    and ongoing support for certified notaries and signing agents.
+                  </p>
+                  <div className="flex items-center text-green-600 font-semibold group-hover:text-green-700 transition-colors">
+                    Apply Today
                     <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
                   </div>
                 </div>
               </div>
-            </Link>
+            </div>
+          </Link>
 
-            {/* Post a Job Card */}
-            <button 
-              onClick={onShowRegister}
-              className="group relative"
-            >
-              <div className="relative bg-gradient-to-br from-blue-500/20 to-indigo-600/20 backdrop-blur-xl border border-white/20 rounded-2xl p-8 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/25">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-indigo-500/10 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-                <div className="relative">
-                  <div className="w-16 h-16 bg-blue-500/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/40 transition-colors">
-                    <svg className="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          {/* Request Services */}
+          <button 
+            onClick={onShowRegister}
+            className="group relative text-left"
+          >
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-3">Post a Job</h3>
-                  <p className="text-blue-100/80 mb-6">Find verified notaries in minutes. Secure, fast, reliable service.</p>
-                  <div className="inline-flex items-center text-blue-300 font-semibold group-hover:text-blue-200 transition-colors">
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                    Request Signing Services
+                  </h3>
+                  <p className="text-gray-600 mb-4 leading-relaxed">
+                    Find qualified notaries for your real estate closings, loan documents, legal papers, 
+                    and business transactions. Fast matching with verified professionals.
+                  </p>
+                  <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
                     Get Started
                     <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -103,38 +130,38 @@ const LandingPage = ({ onShowLogin, onShowRegister }) => (
                   </div>
                 </div>
               </div>
-            </button>
-          </div>
+            </div>
+          </button>
+        </div>
 
-          {/* Feature Grid */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="text-center backdrop-blur-sm bg-white/5 rounded-xl p-6 border border-white/10">
-              <div className="bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-white">Fast Matching</h3>
-              <p className="text-white/70">Get matched with qualified notaries in minutes, not hours.</p>
+        {/* Trust Indicators */}
+        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="text-center bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200/30">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
             </div>
-            <div className="text-center backdrop-blur-sm bg-white/5 rounded-xl p-6 border border-white/10">
-              <div className="bg-gradient-to-br from-green-400/20 to-emerald-500/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-white">Verified Professionals</h3>
-              <p className="text-white/70">All agents are background-checked and fully insured.</p>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">Fast & Reliable</h3>
+            <p className="text-gray-600 text-sm">Professional notaries available within 2 hours nationwide</p>
+          </div>
+          <div className="text-center bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200/30">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
             </div>
-            <div className="text-center backdrop-blur-sm bg-white/5 rounded-xl p-6 border border-white/10">
-              <div className="bg-gradient-to-br from-purple-400/20 to-pink-500/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-white">Mobile Ready</h3>
-              <p className="text-white/70">Complete signings anywhere with our mobile platform.</p>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">Fully Verified</h3>
+            <p className="text-gray-600 text-sm">Background-checked agents with E&O insurance coverage</p>
+          </div>
+          <div className="text-center bg-white/50 backdrop-blur-sm rounded-xl p-6 border border-gray-200/30">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
             </div>
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">Mobile Platform</h3>
+            <p className="text-gray-600 text-sm">Complete signings anywhere with secure mobile technology</p>
           </div>
         </div>
       </div>
