@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Eye, Edit, Trash2, MapPin, Clock, DollarSign, FileText, User, Calendar, Settings, Bell, CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
+import { Plus, Filter, Eye, MapPin, Clock, DollarSign, FileText, User, Calendar, Bell, CheckCircle, X } from 'lucide-react';
 
 const CompanyDashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard');

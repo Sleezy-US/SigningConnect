@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, MapPin, Clock, DollarSign, FileText, User, Calendar, Settings, Menu, X, Smartphone, Mail, MessageSquare } from 'lucide-react';
+import { Bell, MapPin, Clock, DollarSign, FileText, User, Calendar } from 'lucide-react';
 
 const SigningConnectPlatform = () => {
   const [currentView, setCurrentView] = useState('dashboard');
