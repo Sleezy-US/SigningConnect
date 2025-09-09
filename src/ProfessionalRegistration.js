@@ -3,8 +3,9 @@ import { ChevronLeft, ChevronRight, Upload, CheckCircle, AlertCircle, FileText, 
 
 const ProfessionalRegistration = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [applicationId, setApplicationId] = useState(null);
   const [formData, setFormData] = useState({
-    // Personal Information
     personalInfo: {
       firstName: '',
       lastName: '',
@@ -21,7 +22,6 @@ const ProfessionalRegistration = () => {
       monthlyVolume: '',
       billingAddressSame: true
     },
-    // Professional Credentials
     credentials: {
       notaryLicense: '',
       licenseExpiration: '',
@@ -33,7 +33,6 @@ const ProfessionalRegistration = () => {
       digitalNotaryServices: false,
       bilingualServices: false
     },
-    // Service Coverage
     coverage: {
       primaryCounties: '',
       additionalCounties: '',
@@ -45,7 +44,6 @@ const ProfessionalRegistration = () => {
         holidays: false
       }
     },
-    // Fee Structure
     fees: {
       refinanceWithInsurance: '',
       refinanceWithoutInsurance: '',
@@ -57,7 +55,6 @@ const ProfessionalRegistration = () => {
       ronSignings: '',
       travelFeePerMile: ''
     },
-    // Document Uploads
     documents: {
       governmentId: null,
       notaryLicense: null,
@@ -67,7 +64,6 @@ const ProfessionalRegistration = () => {
       w9Form: null,
       additionalCertifications: []
     },
-    // Legal Agreements
     agreements: {
       independentContractor: false,
       privacyPolicy: false,
@@ -121,6 +117,36 @@ const ProfessionalRegistration = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+          <input
+            type="text"
+            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            value={formData.personalInfo.firstName}
+            onChange={(e) => updateFormData('personalInfo', 'firstName', e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+          <input
+            type="text"
+            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            value={formData.personalInfo.lastName}
+            onChange={(e) => updateFormData('personalInfo', 'lastName', e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+          <input
+            type="email"
+            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            value={formData.personalInfo.email}
+            onChange={(e) => updateFormData('personalInfo', 'email', e.target.value)}
+            required
+          />
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Primary Phone *</label>
           <input
@@ -354,12 +380,9 @@ const ProfessionalRegistration = () => {
   );
 
   const submitApplication = () => {
-    // Generate application ID
     const appId = 'SC' + Date.now().toString().slice(-8);
     setApplicationId(appId);
     setIsSubmitted(true);
-    
-    // Here you would submit to your backend
     console.log('Submitting application:', formData);
   };
 
@@ -373,9 +396,13 @@ const ProfessionalRegistration = () => {
         return renderPersonalInfo();
       case 2:
         return renderCredentials();
-      // Add other steps...
       default:
-        return <div>Step {currentStep} content</div>;
+        return (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Step {currentStep}</h3>
+            <p className="text-gray-600">Additional form sections coming soon...</p>
+          </div>
+        );
     }
   };
 
@@ -383,13 +410,11 @@ const ProfessionalRegistration = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-lg">
-          {/* Header */}
           <div className="border-b border-gray-200 px-6 py-4">
             <h1 className="text-2xl font-bold text-gray-900">Professional Signing Agent Application</h1>
             <p className="text-gray-600 mt-1">Join our network of certified notaries and signing professionals</p>
           </div>
 
-          {/* Progress Bar */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               {steps.map((step, index) => {
@@ -419,12 +444,10 @@ const ProfessionalRegistration = () => {
             </div>
           </div>
 
-          {/* Form Content */}
           <div className="px-6 py-8">
             {renderStepContent()}
           </div>
 
-          {/* Navigation */}
           <div className="border-t border-gray-200 px-6 py-4 flex justify-between">
             <button
               onClick={prevStep}
@@ -459,34 +482,4 @@ const ProfessionalRegistration = () => {
   );
 };
 
-export default ProfessionalRegistration;="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-          <input
-            type="text"
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-            value={formData.personalInfo.firstName}
-            onChange={(e) => updateFormData('personalInfo', 'firstName', e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-          <input
-            type="text"
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-            value={formData.personalInfo.lastName}
-            onChange={(e) => updateFormData('personalInfo', 'lastName', e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
-          <input
-            type="email"
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-            value={formData.personalInfo.email}
-            onChange={(e) => updateFormData('personalInfo', 'email', e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className
+export default ProfessionalRegistration;
