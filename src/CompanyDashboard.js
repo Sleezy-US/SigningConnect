@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Plus, Filter, Eye, MapPin, Clock, DollarSign, FileText, User, Calendar, Bell, CheckCircle, X } from 'lucide-react';
 
 const CompanyDashboard = () => {
@@ -67,6 +67,14 @@ const CompanyDashboard = () => {
     averageRating: 4.7,
     monthlySpend: 5250
   });
+
+  // Fixed: Use useCallback to prevent unnecessary re-renders
+  const updateJobField = useCallback((field, value) => {
+    setNewJob(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
 
   const handleSubmitJob = () => {
     if (!newJob.title || !newJob.location || !newJob.appointmentDate || !newJob.appointmentTime || !newJob.fee) {
@@ -231,7 +239,7 @@ const CompanyDashboard = () => {
               </label>
               <select
                 value={newJob.title}
-                onChange={(e) => setNewJob(prev => ({...prev, title: e.target.value}))}
+                onChange={(e) => updateJobField('title', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select signing type</option>
@@ -252,7 +260,7 @@ const CompanyDashboard = () => {
                 <input
                   type="number"
                   value={newJob.fee}
-                  onChange={(e) => setNewJob(prev => ({...prev, fee: e.target.value}))}
+                  onChange={(e) => updateJobField('fee', e.target.value)}
                   className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="150"
                 />
@@ -267,7 +275,7 @@ const CompanyDashboard = () => {
             <input
               type="text"
               value={newJob.location}
-              onChange={(e) => setNewJob(prev => ({...prev, location: e.target.value}))}
+              onChange={(e) => updateJobField('location', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="123 Main St, Orlando, FL 32801"
             />
@@ -281,7 +289,7 @@ const CompanyDashboard = () => {
               <input
                 type="date"
                 value={newJob.appointmentDate}
-                onChange={(e) => setNewJob(prev => ({...prev, appointmentDate: e.target.value}))}
+                onChange={(e) => updateJobField('appointmentDate', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -293,7 +301,7 @@ const CompanyDashboard = () => {
               <input
                 type="time"
                 value={newJob.appointmentTime}
-                onChange={(e) => setNewJob(prev => ({...prev, appointmentTime: e.target.value}))}
+                onChange={(e) => updateJobField('appointmentTime', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -306,7 +314,7 @@ const CompanyDashboard = () => {
             <input
               type="text"
               value={newJob.documentType}
-              onChange={(e) => setNewJob(prev => ({...prev, documentType: e.target.value}))}
+              onChange={(e) => updateJobField('documentType', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Purchase loan documents"
             />
@@ -318,7 +326,7 @@ const CompanyDashboard = () => {
             </label>
             <textarea
               value={newJob.specialInstructions}
-              onChange={(e) => setNewJob(prev => ({...prev, specialInstructions: e.target.value}))}
+              onChange={(e) => updateJobField('specialInstructions', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Any special instructions for the signing agent..."
               rows="3"
