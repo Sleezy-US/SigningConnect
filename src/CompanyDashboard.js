@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Plus, Filter, Eye, MapPin, Clock, DollarSign, FileText, User, Calendar, Bell, CheckCircle, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Filter, Eye, MapPin, Clock, DollarSign, FileText, User, Calendar, Bell, CheckCircle, X, Upload, Lock, Download, AlertTriangle } from 'lucide-react';
 
 const CompanyDashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard');
@@ -18,7 +18,9 @@ const CompanyDashboard = () => {
       agentRating: 4.8,
       datePosted: '2024-01-10',
       documentType: 'Purchase loan documents',
-      specialInstructions: 'Borrower prefers afternoon appointments'
+      specialInstructions: 'Borrower prefers afternoon appointments',
+      hasDocuments: true,
+      documentCount: 45
     },
     {
       id: 2,
@@ -31,7 +33,9 @@ const CompanyDashboard = () => {
       assignedAgent: null,
       datePosted: '2024-01-12',
       documentType: 'Refinance loan documents',
-      specialInstructions: 'Two borrowers, kitchen table preferred'
+      specialInstructions: 'Two borrowers, kitchen table preferred',
+      hasDocuments: false,
+      documentCount: 0
     },
     {
       id: 3,
@@ -46,19 +50,11 @@ const CompanyDashboard = () => {
       agentRating: 4.9,
       datePosted: '2024-01-11',
       documentType: 'HELOC documents',
-      specialInstructions: 'Located in gated community - will provide gate code'
+      specialInstructions: 'Located in gated community - will provide gate code',
+      hasDocuments: true,
+      documentCount: 78
     }
   ]);
-
-  const [newJob, setNewJob] = useState({
-    title: '',
-    location: '',
-    appointmentDate: '',
-    appointmentTime: '',
-    fee: '',
-    documentType: '',
-    specialInstructions: ''
-  });
 
   const [companyStats] = useState({
     totalJobs: 47,
@@ -67,42 +63,6 @@ const CompanyDashboard = () => {
     averageRating: 4.7,
     monthlySpend: 5250
   });
-
-  // Fixed: Use useCallback to prevent unnecessary re-renders
-  const updateJobField = useCallback((field, value) => {
-    setNewJob(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  }, []);
-
-  const handleSubmitJob = () => {
-    if (!newJob.title || !newJob.location || !newJob.appointmentDate || !newJob.appointmentTime || !newJob.fee) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    const jobData = {
-      id: Date.now(),
-      ...newJob,
-      fee: parseInt(newJob.fee),
-      status: 'open',
-      assignedAgent: null,
-      datePosted: new Date().toISOString().split('T')[0]
-    };
-    
-    setJobs(prev => [jobData, ...prev]);
-    setNewJob({
-      title: '',
-      location: '',
-      appointmentDate: '',
-      appointmentTime: '',
-      fee: '',
-      documentType: '',
-      specialInstructions: ''
-    });
-    setShowJobPostForm(false);
-  };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -165,10 +125,21 @@ const CompanyDashboard = () => {
         </div>
         <div>
           <p className="text-gray-600 font-medium">Documents:</p>
-          <p className="flex items-center">
-            <FileText className="w-4 h-4 mr-1" />
-            {job.documentType}
-          </p>
+          <div className="flex items-center">
+            {job.hasDocuments ? (
+              <div className="flex items-center text-green-600">
+                <FileText className="w-4 h-4 mr-1" />
+                <span>{job.documentCount} pages uploaded</span>
+                <Lock className="w-3 h-3 ml-1" title="Secured - only visible to assigned agent" />
+              </div>
+            ) : (
+              <div className="flex items-center text-amber-600">
+                <AlertTriangle className="w-4 h-4 mr-1" />
+                <span>No documents uploaded</span>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">{job.documentType}</p>
         </div>
       </div>
 
@@ -187,6 +158,12 @@ const CompanyDashboard = () => {
               </div>
             </div>
           </div>
+          {job.hasDocuments && (
+            <div className="mt-2 flex items-center text-xs text-green-600">
+              <Download className="w-3 h-3 mr-1" />
+              Documents available to agent
+            </div>
+          )}
         </div>
       )}
 
@@ -214,140 +191,6 @@ const CompanyDashboard = () => {
             Cancel
           </button>
         )}
-      </div>
-    </div>
-  );
-
-  const JobPostForm = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Post New Signing Job</h2>
-          <button 
-            onClick={() => setShowJobPostForm(false)}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Signing Type *
-              </label>
-              <select
-                value={newJob.title}
-                onChange={(e) => updateJobField('title', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select signing type</option>
-                <option value="Purchase Signing">Purchase Signing</option>
-                <option value="Refinance Signing">Refinance Signing</option>
-                <option value="HELOC Signing">HELOC Signing</option>
-                <option value="Reverse Mortgage Signing">Reverse Mortgage Signing</option>
-                <option value="Modification Signing">Modification Signing</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fee Amount *
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-gray-500">$</span>
-                <input
-                  type="number"
-                  value={newJob.fee}
-                  onChange={(e) => updateJobField('fee', e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="150"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Appointment Address *
-            </label>
-            <input
-              type="text"
-              value={newJob.location}
-              onChange={(e) => updateJobField('location', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="123 Main St, Orlando, FL 32801"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Appointment Date *
-              </label>
-              <input
-                type="date"
-                value={newJob.appointmentDate}
-                onChange={(e) => updateJobField('appointmentDate', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Appointment Time *
-              </label>
-              <input
-                type="time"
-                value={newJob.appointmentTime}
-                onChange={(e) => updateJobField('appointmentTime', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Document Type
-            </label>
-            <input
-              type="text"
-              value={newJob.documentType}
-              onChange={(e) => updateJobField('documentType', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Purchase loan documents"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Special Instructions
-            </label>
-            <textarea
-              value={newJob.specialInstructions}
-              onChange={(e) => updateJobField('specialInstructions', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Any special instructions for the signing agent..."
-              rows="3"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button
-              onClick={() => setShowJobPostForm(false)}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmitJob}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Post Job
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -555,7 +398,340 @@ const CompanyDashboard = () => {
       </div>
 
       {/* Job Post Form Modal */}
-      {showJobPostForm && <JobPostForm />}
+      {showJobPostForm && <JobPostFormModal onClose={() => setShowJobPostForm(false)} onSubmit={(jobData) => setJobs(prev => [jobData, ...prev])} />}
+    </div>
+  );
+};
+
+// Separate Job Post Form Component with File Upload
+const JobPostFormModal = ({ onClose, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    location: '',
+    appointmentDate: '',
+    appointmentTime: '',
+    fee: '',
+    documentType: '',
+    specialInstructions: ''
+  });
+
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleInputChange = (field) => (event) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: event.target.value
+    }));
+  };
+
+  const handleFileUpload = (event) => {
+    const files = Array.from(event.target.files);
+    
+    // Validate file types (PDFs only)
+    const validFiles = files.filter(file => file.type === 'application/pdf');
+    
+    if (validFiles.length !== files.length) {
+      alert('Only PDF files are allowed');
+      return;
+    }
+
+    // Validate file sizes (max 50MB per file)
+    const oversizedFiles = validFiles.filter(file => file.size > 50 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      alert('Files must be under 50MB each');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    // Simulate upload progress
+    const interval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsUploading(false);
+          
+          // Add files to upload list with security metadata
+          const newFiles = validFiles.map(file => ({
+            id: Date.now() + Math.random(),
+            name: file.name,
+            size: file.size,
+            pages: Math.floor(file.size / 50000), // Rough estimate: 50KB per page
+            uploadDate: new Date(),
+            securityHash: 'sha256-' + Math.random().toString(36), // Simulated hash
+            encrypted: true
+          }));
+          
+          setUploadedFiles(prev => [...prev, ...newFiles]);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 200);
+  };
+
+  const removeFile = (fileId) => {
+    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+  };
+
+  const getTotalPages = () => {
+    return uploadedFiles.reduce((total, file) => total + file.pages, 0);
+  };
+
+  const handleSubmit = () => {
+    if (!formData.title || !formData.location || !formData.appointmentDate || !formData.appointmentTime || !formData.fee) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const jobData = {
+      id: Date.now(),
+      ...formData,
+      fee: parseInt(formData.fee),
+      status: 'open',
+      assignedAgent: null,
+      datePosted: new Date().toISOString().split('T')[0],
+      hasDocuments: uploadedFiles.length > 0,
+      documentCount: getTotalPages(),
+      uploadedFiles: uploadedFiles.length > 0 ? uploadedFiles : null
+    };
+    
+    onSubmit(jobData);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Post New Signing Job</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Job Details */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold border-b pb-2">Job Details</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Signing Type *
+                </label>
+                <select
+                  value={formData.title}
+                  onChange={handleInputChange('title')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select signing type</option>
+                  <option value="Purchase Signing">Purchase Signing</option>
+                  <option value="Refinance Signing">Refinance Signing</option>
+                  <option value="HELOC Signing">HELOC Signing</option>
+                  <option value="Reverse Mortgage Signing">Reverse Mortgage Signing</option>
+                  <option value="Modification Signing">Modification Signing</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fee Amount *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    value={formData.fee}
+                    onChange={handleInputChange('fee')}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="150"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Appointment Address *
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={handleInputChange('location')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="123 Main St, Orlando, FL 32801"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Appointment Date *
+                </label>
+                <input
+                  type="date"
+                  value={formData.appointmentDate}
+                  onChange={handleInputChange('appointmentDate')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Appointment Time *
+                </label>
+                <input
+                  type="time"
+                  value={formData.appointmentTime}
+                  onChange={handleInputChange('appointmentTime')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Document Type
+              </label>
+              <input
+                type="text"
+                value={formData.documentType}
+                onChange={handleInputChange('documentType')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Purchase loan documents"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Special Instructions
+              </label>
+              <textarea
+                value={formData.specialInstructions}
+                onChange={handleInputChange('specialInstructions')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Any special instructions for the signing agent..."
+                rows="3"
+              />
+            </div>
+          </div>
+
+          {/* Right Column - Document Upload */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold border-b pb-2">Document Upload</h3>
+            
+            {/* Security Notice */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <Lock className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900">Secure Document Handling</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Documents are encrypted and only accessible to the assigned signing agent after job acceptance.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* File Upload Area */}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+              <input
+                type="file"
+                multiple
+                accept=".pdf"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="file-upload"
+                disabled={isUploading}
+              />
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">
+                  <span className="text-blue-600 font-medium">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-gray-500 mt-1">PDF files only, up to 50MB each</p>
+              </label>
+            </div>
+
+            {/* Upload Progress */}
+            {isUploading && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Uploading...</span>
+                  <span className="text-sm text-gray-500">{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-200"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            {/* Uploaded Files List */}
+            {uploadedFiles.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-gray-900">
+                  Uploaded Documents ({getTotalPages()} total pages)
+                </h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {uploadedFiles.map(file => (
+                    <div key={file.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="w-5 h-5 text-red-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {file.pages} pages • {(file.size / 1024 / 1024).toFixed(1)}MB • Encrypted
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeFile(file.id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Security Features Summary */}
+            <div className="bg-gray-50 rounded-lg p-4 text-sm">
+              <h5 className="font-medium text-gray-900 mb-2">Security Features:</h5>
+              <ul className="space-y-1 text-gray-600">
+                <li>• End-to-end encryption for all documents</li>
+                <li>• Access restricted to assigned agent only</li>
+                <li>• Automatic deletion after job completion</li>
+                <li>• Audit trail for all document access</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-6 border-t mt-8">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isUploading}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isUploading ? 'Uploading...' : 'Post Job'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
