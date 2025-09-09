@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Upload, CheckCircle, Shield, User, Building, CreditCard, Scale, MapPin, Clock, DollarSign, FileText, AlertTriangle, Lock, X, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Upload, CheckCircle, Shield, User, Scale, MapPin, DollarSign, FileText, AlertTriangle, Lock, X } from 'lucide-react';
 
 const ProfessionalRegistration = () => {
   const [currentStep, setCurrentStep] = useState(1);
