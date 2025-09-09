@@ -1,5 +1,5 @@
 import React, { useState, createContext, useContext } from 'react';
-import { User, Mail, Lock, Building, Phone, MapPin, X, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, Building, X, Eye, EyeOff } from 'lucide-react';
 
 // Authentication Context
 const AuthContext = createContext();
