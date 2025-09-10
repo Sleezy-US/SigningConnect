@@ -1,59 +1,79 @@
-{
-  "name": "signingconnect",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.15.0",
-    "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4",
-    "lucide-react": "^0.263.1",
-    "express": "^4.18.2",
-    "pg": "^8.11.3",
-    "cors": "^2.8.5",
-    "helmet": "^7.0.0",
-    "dotenv": "^16.3.1",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
-    "uuid": "^9.0.0",
-    "nodemailer": "^6.9.4",
-    "express-rate-limit": "^6.10.0",
-    "express-validator": "^7.0.1",
-    "morgan": "^1.10.0",
-    "compression": "^1.7.4"
-  },
-  "scripts": {
-    "start": "npm run build && node backend/server.js",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "dev": "react-scripts start",
-    "migrate": "node backend/scripts/migrate.js"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+\Starting Container
+npm warn config production Use `--omit=dev` instead.
+> signingconnect@0.1.0 build
+> react-scripts build
+Creating an optimized production build...
+Compiled successfully.
+File sizes after gzip:
+  92.46 kB  build/static/js/main.b8590041.js
+  5.48 kB   build/static/css/main.8c04df17.css
+  1.77 kB   build/static/js/453.f1345d96.chunk.js
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+The build folder is ready to be deployed.
+You may serve it with a static server:
+  npm install -g serve
+  serve -s build
+Find out more about deployment here:
+  https://cra.link/deployment
+node:internal/modules/cjs/loader:1143
+  throw err;
+  ^
+Error: Cannot find module 'cors'
+Require stack:
+- /app/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15)
+    at Module._load (node:internal/modules/cjs/loader:981:27)
+    at Module.require (node:internal/modules/cjs/loader:1231:19)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/app/backend/server.js:2:14)
+    at Module._compile (node:internal/modules/cjs/loader:1364:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1422:10)
+    at Module.load (node:internal/modules/cjs/loader:1203:32)
+    at Module._load (node:internal/modules/cjs/loader:1019:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:128:12) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/app/backend/server.js' ]
 }
+Node.js v18.20.5
+npm warn config production Use `--omit=dev` instead.
+> signingconnect@0.1.0 build
+> react-scripts build
+Creating an optimized production build...
+Compiled successfully.
+File sizes after gzip:
+  92.46 kB  build/static/js/main.b8590041.js
+  5.48 kB   build/static/css/main.8c04df17.css
+  1.77 kB   build/static/js/453.f1345d96.chunk.js
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+The build folder is ready to be deployed.
+You may serve it with a static server:
+  npm install -g serve
+  serve -s build
+Find out more about deployment here:
+  https://cra.link/deployment
+node:internal/modules/cjs/loader:1143
+  throw err;
+  ^
+Error: Cannot find module 'cors'
+Require stack:
+- /app/backend/server.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15)
+    at Module._load (node:internal/modules/cjs/loader:981:27)
+    at Module.require (node:internal/modules/cjs/loader:1231:19)
+    at require (node:internal/modules/helpers:177:18)
+    at Object.<anonymous> (/app/backend/server.js:2:14)
+    at Module._compile (node:internal/modules/cjs/loader:1364:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1422:10)
+    at Module.load (node:internal/modules/cjs/loader:1203:32)
+    at Module._load (node:internal/modules/cjs/loader:1019:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:128:12) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/app/backend/server.js' ]
+}
+Node.js v18.20.5
+npm warn config production Use `--omit=dev` instead.
+> signingconnect@0.1.0 build
+> react-scripts build
+Creating an optimized production build...
