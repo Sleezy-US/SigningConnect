@@ -993,34 +993,75 @@ const ProfessionalRegistration = () => {
 
           {/* Progress Bar */}
           <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              {steps.map((step, index) => {
-                const isActive = step.id === currentStep;
-                const isCompleted = step.id < currentStep;
-                const IconComponent = step.icon;
-                
-                return (
-                  <div key={step.id} className="flex items-center">
-                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                      isCompleted ? 'bg-green-600 border-green-600 text-white' :
-                      isActive ? 'border-blue-600 text-blue-600' : 'border-gray-300 text-gray-400'
-                    }`}>
-                      {isCompleted ? <CheckCircle className="w-5 h-5" /> : <IconComponent className="w-5 h-5" />}
+            {/* Mobile Progress */}
+            <div className="md:hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Step {currentStep} of {steps.length}</span>
+                <span className="text-sm text-gray-500">{Math.round((currentStep / steps.length) * 100)}% Complete</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(currentStep / steps.length) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-sm font-medium text-blue-600">{steps[currentStep - 1]?.title}</p>
+            </div>
+
+            {/* Desktop Progress - Adaptive Display */}
+            <div className="hidden md:block">
+              <div className="flex items-center justify-center space-x-1">
+                {steps.map((step, index) => {
+                  const isActive = step.id === currentStep;
+                  const isCompleted = step.id < currentStep;
+                  const IconComponent = step.icon;
+                  
+                  // Show current step, previous 2, and next 2 steps
+                  const shouldShow = Math.abs(step.id - currentStep) <= 2 || step.id === 1 || step.id === steps.length;
+                  
+                  if (!shouldShow) {
+                    // Show dots for hidden steps
+                    if ((step.id === currentStep - 3 && currentStep > 4) || (step.id === currentStep + 3 && currentStep < steps.length - 2)) {
+                      return (
+                        <div key={step.id} className="flex items-center">
+                          <div className="flex space-x-1">
+                            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }
+                  
+                  return (
+                    <div key={step.id} className="flex items-center">
+                      <div className="flex flex-col items-center min-w-0">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                          isCompleted ? 'bg-green-600 border-green-600 text-white' :
+                          isActive ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-gray-300 text-gray-400'
+                        }`}>
+                          {isCompleted ? <CheckCircle className="w-5 h-5" /> : <IconComponent className="w-5 h-5" />}
+                        </div>
+                        <div className="mt-2 text-center max-w-20">
+                          <p className={`text-xs font-medium ${isActive ? 'text-blue-600' : 'text-gray-500'}`}>
+                            Step {step.id}
+                          </p>
+                          <p className={`text-xs leading-tight ${isActive ? 'text-blue-500' : 'text-gray-400'}`}>
+                            {step.title}
+                          </p>
+                        </div>
+                      </div>
+                      {index < steps.length - 1 && shouldShow && steps[index + 1] && Math.abs(steps[index + 1].id - currentStep) <= 2 && (
+                        <div className={`w-8 lg:w-12 h-0.5 mx-2 ${
+                          isCompleted && steps[index + 1].id <= currentStep ? 'bg-green-600' : 'bg-gray-300'
+                        }`} />
+                      )}
                     </div>
-                    <div className="ml-3 hidden md:block">
-                      <p className={`text-sm font-medium ${isActive ? 'text-blue-600' : 'text-gray-500'}`}>
-                        Step {step.id}
-                      </p>
-                      <p className={`text-xs ${isActive ? 'text-blue-500' : 'text-gray-400'}`}>
-                        {step.title}
-                      </p>
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div className={`w-8 md:w-12 h-0.5 mx-2 md:mx-4 ${isCompleted ? 'bg-green-600' : 'bg-gray-300'}`} />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
 
