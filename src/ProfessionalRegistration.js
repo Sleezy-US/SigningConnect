@@ -1102,7 +1102,12 @@ const ProfessionalRegistration = () => {
             ) : (
               <button
                 onClick={nextStep}
-                className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                disabled={!validateStep(currentStep)}
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  validateStep(currentStep)
+                    ? 'text-white bg-blue-600 border-transparent hover:bg-blue-700'
+                    : 'text-gray-400 bg-gray-100 border-gray-300 cursor-not-allowed'
+                }`}
               >
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
