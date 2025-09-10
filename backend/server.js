@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -21,16 +22,18 @@ pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error('Database connection error:', err);
   } else {
-    console.log('Database connected successfully');
+    console.log('Database connected successfully at', res.rows[0].now);
   }
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Allow React app to load
+}));
 app.use(compression());
 app.use(morgan('combined'));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || ['http://localhost:3000', 'https://signingconnect-production.up.railway.app'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -55,7 +58,12 @@ const applicationLimiter = rateLimit({
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    database: 'connected',
+    environment: process.env.NODE_ENV 
+  });
 });
 
 // Submit professional application
@@ -72,6 +80,8 @@ app.post('/api/applications/submit', applicationLimiter, async (req, res) => {
       fees,
       agreements
     } = req.body;
+
+    console.log('Received application submission for:', personalInfo.email);
 
     // Generate unique application ID
     const applicationId = 'SC' + Date.now().toString().slice(-8);
@@ -143,13 +153,13 @@ app.post('/api/applications/submit', applicationLimiter, async (req, res) => {
       personalInfo.lastName,
       personalInfo.email,
       personalInfo.phone,
-      personalInfo.cellPhone,
-      personalInfo.address,
-      personalInfo.city,
-      personalInfo.state,
-      personalInfo.zipCode,
-      personalInfo.businessName,
-      personalInfo.website,
+      personalInfo.cellPhone || null,
+      personalInfo.address || null,
+      personalInfo.city || null,
+      personalInfo.state || 'FL',
+      personalInfo.zipCode || null,
+      personalInfo.businessName || null,
+      personalInfo.website || null,
       personalInfo.yearsExperience,
       personalInfo.monthlyVolume,
       
@@ -158,34 +168,34 @@ app.post('/api/applications/submit', applicationLimiter, async (req, res) => {
       credentials.notaryStates || ['FL'],
       credentials.eoInsurance,
       parseInt(credentials.insuranceAmount),
-      credentials.digitalNotaryServices,
-      credentials.bilingualServices,
+      credentials.digitalNotaryServices || false,
+      credentials.bilingualServices || false,
       
-      coverage.primaryCounties,
-      coverage.additionalCounties,
-      parseInt(coverage.serviceRadius),
-      parseInt(coverage.travelWillingness),
-      coverage.availabilitySchedule.weekdays,
-      coverage.availabilitySchedule.evenings,
-      coverage.availabilitySchedule.weekends,
-      coverage.availabilitySchedule.holidays,
-      coverage.emergencyServices,
+      coverage.primaryCounties || null,
+      coverage.additionalCounties || null,
+      parseInt(coverage.serviceRadius) || 25,
+      parseInt(coverage.travelWillingness) || 50,
+      coverage.availabilitySchedule?.weekdays || true,
+      coverage.availabilitySchedule?.evenings || false,
+      coverage.availabilitySchedule?.weekends || false,
+      coverage.availabilitySchedule?.holidays || false,
+      coverage.emergencyServices || false,
       
-      Math.round(parseFloat(fees.refinanceWithInsurance) * 100),
-      Math.round(parseFloat(fees.refinanceWithoutInsurance) * 100),
-      Math.round(parseFloat(fees.homeEquityHELOC) * 100),
-      Math.round(parseFloat(fees.purchaseClosings) * 100),
-      Math.round(parseFloat(fees.reverseMortgage) * 100),
-      Math.round(parseFloat(fees.loanModification) * 100),
-      Math.round(parseFloat(fees.commercialClosing) * 100),
-      Math.round(parseFloat(fees.ronSignings) * 100),
-      Math.round(parseFloat(fees.travelFeePerMile) * 100),
+      Math.round(parseFloat(fees.refinanceWithInsurance || 125) * 100),
+      Math.round(parseFloat(fees.refinanceWithoutInsurance || 100) * 100),
+      Math.round(parseFloat(fees.homeEquityHELOC || 150) * 100),
+      Math.round(parseFloat(fees.purchaseClosings || 175) * 100),
+      Math.round(parseFloat(fees.reverseMortgage || 200) * 100),
+      Math.round(parseFloat(fees.loanModification || 125) * 100),
+      Math.round(parseFloat(fees.commercialClosing || 250) * 100),
+      Math.round(parseFloat(fees.ronSignings || 150) * 100),
+      Math.round(parseFloat(fees.travelFeePerMile || 0.65) * 100),
       
-      agreements.independentContractor,
-      agreements.privacyPolicy,
-      agreements.codeOfConduct,
-      agreements.serviceLevel,
-      agreements.electronicSignature,
+      agreements.independentContractor || false,
+      agreements.privacyPolicy || false,
+      agreements.codeOfConduct || false,
+      agreements.serviceLevel || false,
+      agreements.electronicSignature || false,
       new Date()
     ];
 
@@ -196,6 +206,8 @@ app.post('/api/applications/submit', applicationLimiter, async (req, res) => {
 
     // Send confirmation email (placeholder)
     await sendApplicationConfirmationEmail(personalInfo.email, applicationId);
+
+    console.log('Application saved successfully:', applicationId);
 
     res.status(201).json({
       success: true,
@@ -215,7 +227,8 @@ app.post('/api/applications/submit', applicationLimiter, async (req, res) => {
     } else {
       res.status(500).json({
         success: false,
-        message: 'Failed to submit application. Please try again.'
+        message: 'Failed to submit application. Please try again.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   } finally {
@@ -453,15 +466,28 @@ app.patch('/api/admin/applications/:id/status', async (req, res) => {
   }
 });
 
+// Serve static files from React build (PRODUCTION ONLY)
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files
+  app.use(express.static(path.join(__dirname, '../build')));
+  
+  // Handle React routing - return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../build', 'index.html'));
+  });
+}
+
 // Utility functions
 async function sendApplicationConfirmationEmail(email, applicationId) {
   // Placeholder - implement with nodemailer
-  console.log(`Sending confirmation email to ${email} for application ${applicationId}`);
+  console.log(`[EMAIL] Sending confirmation email to ${email} for application ${applicationId}`);
+  // TODO: Implement actual email sending
 }
 
 async function sendStatusUpdateEmail(email, firstName, applicationId, status, rejectionReason) {
   // Placeholder - implement with nodemailer
-  console.log(`Sending status update email to ${email}: ${status}`);
+  console.log(`[EMAIL] Sending status update email to ${email}: ${status}`);
+  // TODO: Implement actual email sending
 }
 
 async function createAgentAccount(applicationId) {
@@ -502,7 +528,11 @@ async function createAgentAccount(applicationId) {
       fees: {
         refinanceWithInsurance: application.refinance_with_insurance / 100,
         purchaseClosings: application.purchase_closings / 100,
-        // ... other fees
+        homeEquityHELOC: application.home_equity_heloc / 100,
+        reverseMortgage: application.reverse_mortgage / 100,
+        commercialClosing: application.commercial_closing / 100,
+        ronSignings: application.ron_signings / 100,
+        travelFeePerMile: application.travel_fee_per_mile / 100
       }
     };
     
@@ -516,7 +546,7 @@ async function createAgentAccount(applicationId) {
     await client.query('COMMIT');
     
     // Send welcome email with temporary password
-    console.log(`Created agent account for ${application.email} with temp password: ${tempPassword}`);
+    console.log(`[ACCOUNT] Created agent account for ${application.email} with temp password: ${tempPassword}`);
     
   } catch (error) {
     await client.query('ROLLBACK');
@@ -536,14 +566,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint not found'
-  });
-});
-
+// Start server
 app.listen(PORT, () => {
   console.log(`SigningConnect API server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+  console.log(`Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
 });

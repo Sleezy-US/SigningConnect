@@ -10,7 +10,9 @@ async function runMigration() {
   const client = await pool.connect();
   
   try {
-    console.log('Starting database migration...');
+    console.log('Starting SigningConnect database migration...');
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('Database URL:', process.env.DATABASE_URL ? 'Connected' : 'Not found');
     
     // Create applications table
     await client.query(`
@@ -256,7 +258,9 @@ async function runMigration() {
     `);
     console.log('✓ Audit log table created');
 
-    // Create indexes
+    // Create indexes for performance
+    console.log('Creating database indexes...');
+    
     await client.query('CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_applications_email ON applications(email)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_applications_created_at ON applications(created_at)');
@@ -278,9 +282,11 @@ async function runMigration() {
     await client.query('CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at)');
 
-    console.log('✓ Indexes created');
+    console.log('✓ Database indexes created');
 
     // Create update timestamp function and triggers
+    console.log('Setting up database triggers...');
+    
     await client.query(`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
       RETURNS TRIGGER AS $$
@@ -310,33 +316,3 @@ async function runMigration() {
       CREATE TRIGGER update_jobs_updated_at 
       BEFORE UPDATE ON jobs 
       FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    `);
-
-    console.log('✓ Triggers created');
-
-    console.log('\n🎉 Database migration completed successfully!');
-    console.log('\nTables created:');
-    console.log('- applications (pending agent applications)');
-    console.log('- users (approved agents and companies)'); 
-    console.log('- jobs (signing job postings)');
-    console.log('- documents (uploaded files)');
-    console.log('- job_applications (agent applications for jobs)');
-    console.log('- reviews (ratings and feedback)');
-    console.log('- notifications (system notifications)');
-    console.log('- audit_log (security and compliance)');
-
-  } catch (error) {
-    console.error('Migration failed:', error);
-    throw error;
-  } finally {
-    client.release();
-    await pool.end();
-  }
-}
-
-// Run migration
-if (require.main === module) {
-  runMigration().catch(console.error);
-}
-
-module.exports = { runMigration };
