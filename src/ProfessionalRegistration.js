@@ -4,8 +4,11 @@ import { ChevronLeft, ChevronRight, Upload, CheckCircle, Shield, User, Scale, Ma
 const ProfessionalRegistration = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [applicationId, setApplicationId] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState({});
+  const [submitError, setSubmitError] = useState('');
+
   const [formData, setFormData] = useState({
     personalInfo: {
       firstName: '',
@@ -15,7 +18,7 @@ const ProfessionalRegistration = () => {
       cellPhone: '',
       address: '',
       city: '',
-      state: '',
+      state: 'FL',
       zipCode: '',
       businessName: '',
       website: '',
@@ -28,8 +31,6 @@ const ProfessionalRegistration = () => {
       notaryStates: ['FL'],
       eoInsurance: '',
       insuranceAmount: '',
-      backgroundCheck: '',
-      specializations: [],
       digitalNotaryServices: false,
       bilingualServices: false
     },
@@ -57,14 +58,6 @@ const ProfessionalRegistration = () => {
       ronSignings: '150',
       travelFeePerMile: '0.65'
     },
-    documents: {
-      governmentId: null,
-      notaryLicense: null,
-      eoInsurance: null,
-      backgroundCheck: null,
-      resume: null,
-      w9Form: null
-    },
     agreements: {
       independentContractor: false,
       privacyPolicy: false,
@@ -84,13 +77,11 @@ const ProfessionalRegistration = () => {
     { id: 7, title: 'Review & Submit', icon: CheckCircle }
   ];
 
+  // Form update helpers
   const updateFormData = (section, field, value) => {
     setFormData(prev => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
-      }
+      [section]: { ...prev[section], [field]: value }
     }));
   };
 
@@ -99,42 +90,36 @@ const ProfessionalRegistration = () => {
       ...prev,
       [section]: {
         ...prev[section],
-        [parentField]: {
-          ...prev[section][parentField],
-          [childField]: value
-        }
+        [parentField]: { ...prev[section][parentField], [childField]: value }
       }
     }));
   };
 
+  // File upload handler
   const handleFileUpload = (documentType, event) => {
     const file = event.target.files[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Only PDF, JPEG, and PNG files are allowed');
-        return;
-      }
-      
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be under 10MB');
-        return;
-      }
+    if (!file) return;
 
-      setUploadedFiles(prev => ({
-        ...prev,
-        [documentType]: {
-          file,
-          name: file.name,
-          size: file.size,
-          uploadDate: new Date()
-        }
-      }));
-
-      updateFormData('documents', documentType, file);
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only PDF, JPEG, and PNG files are allowed');
+      return;
     }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be under 10MB');
+      return;
+    }
+
+    setUploadedFiles(prev => ({
+      ...prev,
+      [documentType]: {
+        file,
+        name: file.name,
+        size: file.size,
+        uploadDate: new Date()
+      }
+    }));
   };
 
   const removeFile = (documentType) => {
@@ -143,21 +128,13 @@ const ProfessionalRegistration = () => {
       delete updated[documentType];
       return updated;
     });
-    updateFormData('documents', documentType, null);
   };
 
-  const nextStep = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
+  // Navigation
+  const nextStep = () => currentStep < steps.length && setCurrentStep(currentStep + 1);
+  const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
+  // Validation
   const validateStep = (step) => {
     switch (step) {
       case 1:
@@ -175,6 +152,47 @@ const ProfessionalRegistration = () => {
     }
   };
 
+  // API submission
+  const submitApplication = async () => {
+    if (!validateStep(6)) {
+      alert('Please complete all required agreements before submitting.');
+      return;
+    }
+
+    setIsLoading(true);
+    setSubmitError('');
+
+    try {
+      const response = await fetch('/api/applications/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personalInfo: formData.personalInfo,
+          credentials: formData.credentials,
+          coverage: formData.coverage,
+          fees: formData.fees,
+          agreements: formData.agreements
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setApplicationId(result.applicationId);
+        setIsSubmitted(true);
+        localStorage.setItem('signingconnect_application_id', result.applicationId);
+      } else {
+        setSubmitError(result.message || 'Failed to submit application. Please try again.');
+      }
+    } catch (error) {
+      console.error('Submission error:', error);
+      setSubmitError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 1: Personal Information
   const renderPersonalInfo = () => (
     <div className="space-y-6">
       <div className="bg-blue-50 p-4 rounded-lg">
@@ -287,6 +305,7 @@ const ProfessionalRegistration = () => {
     </div>
   );
 
+  // Step 2: Professional Credentials
   const renderCredentials = () => (
     <div className="space-y-6">
       <div className="bg-amber-50 p-4 rounded-lg">
@@ -388,6 +407,7 @@ const ProfessionalRegistration = () => {
     </div>
   );
 
+  // Step 3: Service Coverage
   const renderServiceCoverage = () => (
     <div className="space-y-6">
       <div className="bg-green-50 p-4 rounded-lg">
@@ -454,46 +474,23 @@ const ProfessionalRegistration = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Availability Schedule</label>
             <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="weekdays"
-                  className="rounded border-gray-300"
-                  checked={formData.coverage.availabilitySchedule.weekdays}
-                  onChange={(e) => updateNestedFormData('coverage', 'availabilitySchedule', 'weekdays', e.target.checked)}
-                />
-                <label htmlFor="weekdays" className="text-sm text-gray-700">Weekdays (Mon-Fri, 9 AM - 5 PM)</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="evenings"
-                  className="rounded border-gray-300"
-                  checked={formData.coverage.availabilitySchedule.evenings}
-                  onChange={(e) => updateNestedFormData('coverage', 'availabilitySchedule', 'evenings', e.target.checked)}
-                />
-                <label htmlFor="evenings" className="text-sm text-gray-700">Evenings (5 PM - 8 PM)</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="weekends"
-                  className="rounded border-gray-300"
-                  checked={formData.coverage.availabilitySchedule.weekends}
-                  onChange={(e) => updateNestedFormData('coverage', 'availabilitySchedule', 'weekends', e.target.checked)}
-                />
-                <label htmlFor="weekends" className="text-sm text-gray-700">Weekends (Sat-Sun)</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="holidays"
-                  className="rounded border-gray-300"
-                  checked={formData.coverage.availabilitySchedule.holidays}
-                  onChange={(e) => updateNestedFormData('coverage', 'availabilitySchedule', 'holidays', e.target.checked)}
-                />
-                <label htmlFor="holidays" className="text-sm text-gray-700">Holidays</label>
-              </div>
+              {[
+                { key: 'weekdays', label: 'Weekdays (Mon-Fri, 9 AM - 5 PM)' },
+                { key: 'evenings', label: 'Evenings (5 PM - 8 PM)' },
+                { key: 'weekends', label: 'Weekends (Sat-Sun)' },
+                { key: 'holidays', label: 'Holidays' }
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={key}
+                    className="rounded border-gray-300"
+                    checked={formData.coverage.availabilitySchedule[key]}
+                    onChange={(e) => updateNestedFormData('coverage', 'availabilitySchedule', key, e.target.checked)}
+                  />
+                  <label htmlFor={key} className="text-sm text-gray-700">{label}</label>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -512,162 +509,75 @@ const ProfessionalRegistration = () => {
     </div>
   );
 
-  const renderFeeStructure = () => (
-    <div className="space-y-6">
-      <div className="bg-purple-50 p-4 rounded-lg">
-        <h3 className="font-semibold text-purple-900 mb-2">Fee Structure</h3>
-        <p className="text-purple-700">Set your competitive rates for different types of signing services. These will be your standard fees visible to title companies.</p>
-      </div>
+  // Step 4: Fee Structure
+  const renderFeeStructure = () => {
+    const feeCategories = [
+      {
+        title: 'Residential Loan Signings',
+        fees: [
+          { key: 'refinanceWithInsurance', label: 'Refinance with Title Insurance', placeholder: '125' },
+          { key: 'refinanceWithoutInsurance', label: 'Refinance without Title Insurance', placeholder: '100' },
+          { key: 'homeEquityHELOC', label: 'Home Equity/HELOC', placeholder: '150' },
+          { key: 'purchaseClosings', label: 'Purchase Closings', placeholder: '175' }
+        ]
+      },
+      {
+        title: 'Specialized Services',
+        fees: [
+          { key: 'reverseMortgage', label: 'Reverse Mortgage', placeholder: '200' },
+          { key: 'loanModification', label: 'Loan Modification', placeholder: '125' },
+          { key: 'commercialClosing', label: 'Commercial Closing', placeholder: '250' },
+          { key: 'ronSignings', label: 'Remote Online Notary (RON)', placeholder: '150' },
+          { key: 'travelFeePerMile', label: 'Travel Fee per Mile', placeholder: '0.65', step: '0.01' }
+        ]
+      }
+    ];
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <h4 className="font-semibold text-gray-900 border-b pb-2">Residential Loan Signings</h4>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Refinance with Title Insurance</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.refinanceWithInsurance}
-                onChange={(e) => updateFormData('fees', 'refinanceWithInsurance', e.target.value)}
-                placeholder="125"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Refinance without Title Insurance</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.refinanceWithoutInsurance}
-                onChange={(e) => updateFormData('fees', 'refinanceWithoutInsurance', e.target.value)}
-                placeholder="100"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Home Equity/HELOC</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.homeEquityHELOC}
-                onChange={(e) => updateFormData('fees', 'homeEquityHELOC', e.target.value)}
-                placeholder="150"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Closings</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.purchaseClosings}
-                onChange={(e) => updateFormData('fees', 'purchaseClosings', e.target.value)}
-                placeholder="175"
-              />
-            </div>
-          </div>
+    return (
+      <div className="space-y-6">
+        <div className="bg-purple-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-purple-900 mb-2">Fee Structure</h3>
+          <p className="text-purple-700">Set your competitive rates for different types of signing services. These will be your standard fees visible to title companies.</p>
         </div>
 
-        <div className="space-y-4">
-          <h4 className="font-semibold text-gray-900 border-b pb-2">Specialized Services</h4>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Reverse Mortgage</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.reverseMortgage}
-                onChange={(e) => updateFormData('fees', 'reverseMortgage', e.target.value)}
-                placeholder="200"
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {feeCategories.map((category, index) => (
+            <div key={index} className="space-y-4">
+              <h4 className="font-semibold text-gray-900 border-b pb-2">{category.title}</h4>
+              {category.fees.map(({ key, label, placeholder, step }) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-gray-500">$</span>
+                    <input
+                      type="number"
+                      step={step || "1"}
+                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={formData.fees[key]}
+                      onChange={(e) => updateFormData('fees', key, e.target.value)}
+                      placeholder={placeholder}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          ))}
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Modification</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.loanModification}
-                onChange={(e) => updateFormData('fees', 'loanModification', e.target.value)}
-                placeholder="125"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Commercial Closing</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.commercialClosing}
-                onChange={(e) => updateFormData('fees', 'commercialClosing', e.target.value)}
-                placeholder="250"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Remote Online Notary (RON)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.ronSignings}
-                onChange={(e) => updateFormData('fees', 'ronSignings', e.target.value)}
-                placeholder="150"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Travel Fee per Mile</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                step="0.01"
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.fees.travelFeePerMile}
-                onChange={(e) => updateFormData('fees', 'travelFeePerMile', e.target.value)}
-                placeholder="0.65"
-              />
-            </div>
-          </div>
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-900 mb-2">Fee Guidelines</h4>
+          <ul className="text-sm text-gray-700 space-y-1">
+            <li>• Fees are your standard rates - you can negotiate higher for complex or rush jobs</li>
+            <li>• Travel fees apply beyond your standard service radius</li>
+            <li>• Emergency/rush fees typically add 25-50% to base rates</li>
+            <li>• All fees are subject to market competition and company budgets</li>
+          </ul>
         </div>
       </div>
+    );
+  };
 
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="font-semibold text-gray-900 mb-2">Fee Guidelines</h4>
-        <ul className="text-sm text-gray-700 space-y-1">
-          <li>• Fees are your standard rates - you can negotiate higher for complex or rush jobs</li>
-          <li>• Travel fees apply beyond your standard service radius</li>
-          <li>• Emergency/rush fees typically add 25-50% to base rates</li>
-          <li>• All fees are subject to market competition and company budgets</li>
-        </ul>
-      </div>
-    </div>
-  );
-
+  // Step 5: Document Upload
   const renderDocumentUpload = () => {
     const requiredDocs = [
       { key: 'governmentId', label: 'Government Issued Photo ID', required: true, description: 'Driver\'s license, passport, or state ID' },
@@ -759,6 +669,7 @@ const ProfessionalRegistration = () => {
     );
   };
 
+  // Step 6: Legal Agreements
   const renderLegalAgreements = () => {
     const agreements = [
       {
@@ -846,6 +757,7 @@ const ProfessionalRegistration = () => {
     );
   };
 
+  // Step 7: Review & Submit
   const renderReviewSubmit = () => {
     const getCompletionStatus = () => {
       const requiredFields = [
@@ -966,10 +878,23 @@ const ProfessionalRegistration = () => {
             </div>
           </div>
         )}
+
+        {submitError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
+              <div>
+                <h4 className="text-sm font-medium text-red-900">Submission Error</h4>
+                <p className="text-sm text-red-700 mt-1">{submitError}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
+  // Success State
   const renderSubmittedState = () => (
     <div className="max-w-2xl mx-auto text-center py-12">
       <div className="bg-green-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
@@ -990,27 +915,19 @@ const ProfessionalRegistration = () => {
       <div className="bg-amber-50 p-6 rounded-lg mb-6 text-left">
         <h3 className="font-semibold text-amber-900 mb-3">What Happens Next?</h3>
         <div className="space-y-3 text-amber-800">
-          <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center text-xs font-semibold mt-0.5">1</div>
-            <div>
-              <p className="font-medium">Document Verification (1-2 business days)</p>
-              <p className="text-sm">Our compliance team will review your uploaded documents and credentials.</p>
+          {[
+            { step: 1, title: 'Document Verification (1-2 business days)', desc: 'Our compliance team will review your uploaded documents and credentials.' },
+            { step: 2, title: 'Background Check Processing (3-5 business days)', desc: 'Professional background verification and reference checks.' },
+            { step: 3, title: 'Final Review & Approval (1-2 business days)', desc: 'Final approval and account activation notification.' }
+          ].map(({ step, title, desc }) => (
+            <div key={step} className="flex items-start space-x-3">
+              <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center text-xs font-semibold mt-0.5">{step}</div>
+              <div>
+                <p className="font-medium">{title}</p>
+                <p className="text-sm">{desc}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center text-xs font-semibold mt-0.5">2</div>
-            <div>
-              <p className="font-medium">Background Check Processing (3-5 business days)</p>
-              <p className="text-sm">Professional background verification and reference checks.</p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center text-xs font-semibold mt-0.5">3</div>
-            <div>
-              <p className="font-medium">Final Review & Approval (1-2 business days)</p>
-              <p className="text-sm">Final approval and account activation notification.</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
       
@@ -1039,23 +956,18 @@ const ProfessionalRegistration = () => {
     </div>
   );
 
-  const submitApplication = () => {
-    if (!validateStep(6)) {
-      alert('Please complete all required agreements before submitting.');
-      return;
+  // Main render
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1: return renderPersonalInfo();
+      case 2: return renderCredentials();
+      case 3: return renderServiceCoverage();
+      case 4: return renderFeeStructure();
+      case 5: return renderDocumentUpload();
+      case 6: return renderLegalAgreements();
+      case 7: return renderReviewSubmit();
+      default: return renderPersonalInfo();
     }
-
-    const appId = 'SC' + Date.now().toString().slice(-8);
-    setApplicationId(appId);
-    setIsSubmitted(true);
-    
-    // Here you would normally send the data to your backend
-    console.log('Submitting application:', {
-      applicationId: appId,
-      formData,
-      uploadedFiles,
-      submissionDate: new Date()
-    });
   };
 
   if (isSubmitted) {
@@ -1069,19 +981,6 @@ const ProfessionalRegistration = () => {
       </div>
     );
   }
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 1: return renderPersonalInfo();
-      case 2: return renderCredentials();
-      case 3: return renderServiceCoverage();
-      case 4: return renderFeeStructure();
-      case 5: return renderDocumentUpload();
-      case 6: return renderLegalAgreements();
-      case 7: return renderReviewSubmit();
-      default: return renderPersonalInfo();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -1144,11 +1043,20 @@ const ProfessionalRegistration = () => {
             {currentStep === steps.length ? (
               <button
                 onClick={submitApplication}
-                disabled={!validateStep(6)}
+                disabled={!validateStep(6) || isLoading}
                 className="flex items-center px-6 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Submit Application
-                <CheckCircle className="w-4 h-4 ml-1" />
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    Submit Application
+                    <CheckCircle className="w-4 h-4 ml-1" />
+                  </>
+                )}
               </button>
             ) : (
               <button
