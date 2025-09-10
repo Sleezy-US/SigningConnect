@@ -1,6 +1,5 @@
-// src/App.js
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { AuthProvider, useAuth, LoginModal, RegisterModal } from './AuthComponents';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth, LoginModal, RegisterModal, ForgotPasswordModal, ProtectedRoute } from './AuthComponents';
 import AgentDashboard from './AgentDashboard';
 import CompanyDashboard from './CompanyDashboard';
 import ProfessionalRegistration from './ProfessionalRegistration';
@@ -40,17 +39,6 @@ const LandingPage = ({ onShowLogin, onShowRegister }) => (
     </nav>
 
     <div className="relative overflow-hidden">
-      {/* Subtle Background Pattern */}
-      <div className="absolute inset-0 opacity-40">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-100/30 via-transparent to-indigo-100/30"></div>
-        <svg className="absolute top-20 left-20 w-64 h-64 text-blue-100" fill="currentColor" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="50" opacity="0.1"/>
-        </svg>
-        <svg className="absolute bottom-32 right-16 w-48 h-48 text-indigo-100" fill="currentColor" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="50" opacity="0.15"/>
-        </svg>
-      </div>
-
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
           <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
@@ -68,37 +56,39 @@ const LandingPage = ({ onShowLogin, onShowRegister }) => (
         {/* Professional Service Cards */}
         <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
           {/* Join as Professional Agent */}
-          <Link 
-            to="/register-agent"
-            className="group relative"
-          >
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+          <div className="group relative">
+            <a 
+              href="/register-agent"
+              className="block"
+            >
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200/50 p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors">
-                    Join as Signing Agent
-                  </h3>
-                  <p className="text-gray-600 mb-4 leading-relaxed">
-                    Become part of our professional network. Flexible scheduling, competitive fees ($75-200 per signing), 
-                    and ongoing support for certified notaries and signing agents.
-                  </p>
-                  <div className="flex items-center text-green-600 font-semibold group-hover:text-green-700 transition-colors">
-                    Apply Today
-                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-green-600 transition-colors">
+                      Join as Signing Agent
+                    </h3>
+                    <p className="text-gray-600 mb-4 leading-relaxed">
+                      Become part of our professional network. Flexible scheduling, competitive fees ($75-200 per signing), 
+                      and ongoing support for certified notaries and signing agents.
+                    </p>
+                    <div className="flex items-center text-green-600 font-semibold group-hover:text-green-700 transition-colors">
+                      Apply Today
+                      <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </Link>
+            </a>
+          </div>
 
           {/* Request Services */}
           <button 
@@ -170,9 +160,21 @@ const LandingPage = ({ onShowLogin, onShowRegister }) => (
 );
 
 const AuthenticatedApp = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -181,8 +183,37 @@ const AuthenticatedApp = () => {
           onShowLogin={() => setShowLogin(true)} 
           onShowRegister={() => setShowRegister(true)}
         />
-        {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
-        {showRegister && <RegisterModal onClose={() => setShowRegister(false)} />}
+        
+        <LoginModal 
+          isOpen={showLogin} 
+          onClose={() => setShowLogin(false)}
+          onSwitchToRegister={() => {
+            setShowLogin(false);
+            setShowRegister(true);
+          }}
+          onSwitchToForgotPassword={() => {
+            setShowLogin(false);
+            setShowForgotPassword(true);
+          }}
+        />
+        
+        <RegisterModal 
+          isOpen={showRegister} 
+          onClose={() => setShowRegister(false)}
+          onSwitchToLogin={() => {
+            setShowRegister(false);
+            setShowLogin(true);
+          }}
+        />
+        
+        <ForgotPasswordModal 
+          isOpen={showForgotPassword} 
+          onClose={() => setShowForgotPassword(false)}
+          onSwitchToLogin={() => {
+            setShowForgotPassword(false);
+            setShowLogin(true);
+          }}
+        />
       </>
     );
   }
@@ -190,8 +221,10 @@ const AuthenticatedApp = () => {
   // Redirect based on user type
   if (user.userType === 'company') {
     return <Navigate to="/company" replace />;
-  } else {
+  } else if (user.userType === 'agent') {
     return <Navigate to="/agent" replace />;
+  } else {
+    return <Navigate to="/admin" replace />;
   }
 };
 
@@ -204,8 +237,22 @@ function App() {
           <Route path="/register-agent" element={<ProfessionalRegistration />} />
           
           {/* Protected routes */}
-          <Route path="/agent" element={<AgentDashboard />} />
-          <Route path="/company" element={<CompanyDashboard />} />
+          <Route 
+            path="/agent" 
+            element={
+              <ProtectedRoute requiredUserType="agent">
+                <AgentDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company" 
+            element={
+              <ProtectedRoute requiredUserType="company">
+                <CompanyDashboard />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* Default route */}
           <Route path="/" element={<AuthenticatedApp />} />

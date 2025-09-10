@@ -6,10 +6,16 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 const path = require('path');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// JWT secret - in production, use a strong environment variable
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
 
 // Database connection
 const pool = new Pool({
@@ -54,6 +60,41 @@ const applicationLimiter = rateLimit({
   message: 'Too many application submissions, please try again later.'
 });
 
+// Auth rate limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 auth attempts per 15 minutes
+  message: 'Too many authentication attempts, please try again later.'
+});
+
+// Authentication middleware
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Access token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Get user from database
+    const userQuery = 'SELECT * FROM users WHERE id = $1 AND status = $2';
+    const result = await pool.query(userQuery, [decoded.userId, 'active']);
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    }
+    
+    req.user = result.rows[0];
+    next();
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return res.status(403).json({ success: false, message: 'Invalid token' });
+  }
+};
+
 // API Routes
 
 // Health check
@@ -65,6 +106,430 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV 
   });
 });
+
+// =============================================================================
+// AUTHENTICATION ENDPOINTS
+// =============================================================================
+
+// Company registration endpoint
+app.post('/api/auth/register', authLimiter, async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const {
+      userType,
+      email,
+      password,
+      companyName,
+      contactName,
+      phone,
+      address
+    } = req.body;
+
+    // Validate required fields
+    if (!email || !password || !companyName || !contactName || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'All required fields must be provided'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists'
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user profile
+    const profile = {
+      companyName,
+      contactName,
+      phone,
+      address,
+      verified: false,
+      createdAt: new Date().toISOString()
+    };
+
+    // Insert new user
+    const insertQuery = `
+      INSERT INTO users (email, password_hash, user_type, profile, status)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, email, user_type, profile, created_at
+    `;
+    
+    const result = await client.query(insertQuery, [
+      email,
+      hashedPassword,
+      'company',
+      JSON.stringify(profile),
+      'active'
+    ]);
+
+    const newUser = result.rows[0];
+
+    await client.query('COMMIT');
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: newUser.id, 
+        email: newUser.email, 
+        userType: newUser.user_type 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    console.log('New company registered:', email);
+
+    // Send response without password
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      token,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        userType: newUser.user_type,
+        profile: newUser.profile,
+        createdAt: newUser.created_at
+      }
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Registration error:', error);
+    
+    if (error.code === '23505') {
+      res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create account. Please try again.'
+      });
+    }
+  } finally {
+    client.release();
+  }
+});
+
+// Login endpoint
+app.post('/api/auth/login', authLimiter, async (req, res) => {
+  try {
+    const { email, password, userType } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    // Get user from database
+    const userQuery = `
+      SELECT id, email, password_hash, user_type, profile, status, last_login 
+      FROM users 
+      WHERE email = $1 AND user_type = $2
+    `;
+    
+    const result = await pool.query(userQuery, [email, userType]);
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    const user = result.rows[0];
+
+    // Check if account is active
+    if (user.status !== 'active') {
+      return res.status(401).json({
+        success: false,
+        message: 'Account is inactive. Please contact support.'
+      });
+    }
+
+    // Verify password
+    const passwordValid = await bcrypt.compare(password, user.password_hash);
+    
+    if (!passwordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+
+    // Update last login
+    await pool.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email, 
+        userType: user.user_type 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    console.log('User logged in:', email, 'Type:', userType);
+
+    // Send response without password
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        userType: user.user_type,
+        profile: user.profile,
+        lastLogin: user.last_login
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Login failed. Please try again.'
+    });
+  }
+});
+
+// Verify token endpoint
+app.get('/api/auth/verify', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        userType: req.user.user_type,
+        profile: req.user.profile,
+        lastLogin: req.user.last_login
+      }
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Token verification failed'
+    });
+  }
+});
+
+// Forgot password endpoint
+app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email address is required'
+      });
+    }
+
+    // Check if user exists
+    const userQuery = 'SELECT id, email FROM users WHERE email = $1';
+    const result = await pool.query(userQuery, [email]);
+    
+    if (result.rows.length === 0) {
+      // Don't reveal whether email exists for security
+      return res.json({
+        success: true,
+        message: 'If an account with this email exists, password reset instructions have been sent.'
+      });
+    }
+
+    const user = result.rows[0];
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Store reset token in database
+    await pool.query(
+      'UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3',
+      [resetToken, resetTokenExpiry, user.id]
+    );
+
+    // TODO: Send password reset email
+    console.log(`Password reset token for ${email}: ${resetToken}`);
+    
+    res.json({
+      success: true,
+      message: 'Password reset instructions have been sent to your email address.'
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process password reset request. Please try again.'
+    });
+  }
+});
+
+// Reset password endpoint
+app.post('/api/auth/reset-password', authLimiter, async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token and new password are required'
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long'
+      });
+    }
+
+    // Find user with valid reset token
+    const userQuery = `
+      SELECT id, email 
+      FROM users 
+      WHERE reset_token = $1 AND reset_token_expiry > CURRENT_TIMESTAMP
+    `;
+    
+    const result = await pool.query(userQuery, [token]);
+    
+    if (result.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    const user = result.rows[0];
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update password and clear reset token
+    await pool.query(
+      'UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2',
+      [hashedPassword, user.id]
+    );
+
+    console.log('Password reset completed for:', user.email);
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password. Please try again.'
+    });
+  }
+});
+
+// Get current user profile
+app.get('/api/auth/profile', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        userType: req.user.user_type,
+        profile: req.user.profile,
+        totalJobsCompleted: req.user.total_jobs_completed,
+        averageRating: req.user.average_rating,
+        onTimePercentage: req.user.on_time_percentage,
+        totalEarnings: req.user.total_earnings,
+        createdAt: req.user.created_at,
+        lastLogin: req.user.last_login
+      }
+    });
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile'
+    });
+  }
+});
+
+// Change password endpoint
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long'
+      });
+    }
+
+    // Verify current password
+    const passwordValid = await bcrypt.compare(currentPassword, req.user.password_hash);
+    
+    if (!passwordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update password
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [hashedPassword, req.user.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password'
+    });
+  }
+});
+
+// =============================================================================
+// APPLICATION ENDPOINTS (EXISTING)
+// =============================================================================
 
 // Submit professional application
 app.post('/api/applications/submit', applicationLimiter, async (req, res) => {
@@ -286,8 +751,16 @@ app.get('/api/applications/status/:applicationId', async (req, res) => {
 });
 
 // Admin: Get all applications
-app.get('/api/admin/applications', async (req, res) => {
+app.get('/api/admin/applications', authenticateToken, async (req, res) => {
   try {
+    // Check if user is admin
+    if (req.user.user_type !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
     const { status, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
     
@@ -352,8 +825,16 @@ app.get('/api/admin/applications', async (req, res) => {
 });
 
 // Admin: Get application details
-app.get('/api/admin/applications/:id', async (req, res) => {
+app.get('/api/admin/applications/:id', authenticateToken, async (req, res) => {
   try {
+    // Check if user is admin
+    if (req.user.user_type !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
     const { id } = req.params;
     
     const query = 'SELECT * FROM applications WHERE id = $1';
@@ -402,8 +883,16 @@ app.get('/api/admin/applications/:id', async (req, res) => {
 });
 
 // Admin: Update application status
-app.patch('/api/admin/applications/:id/status', async (req, res) => {
+app.patch('/api/admin/applications/:id/status', authenticateToken, async (req, res) => {
   try {
+    // Check if user is admin
+    if (req.user.user_type !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
     const { id } = req.params;
     const { status, rejectionReason, notes } = req.body;
     
@@ -421,13 +910,14 @@ app.patch('/api/admin/applications/:id/status', async (req, res) => {
         status = $1,
         rejection_reason = $2,
         notes = $3,
+        reviewed_by = $4,
         reviewed_at = CURRENT_TIMESTAMP,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $4
+      WHERE id = $5
       RETURNING application_id, email, first_name, last_name
     `;
     
-    const result = await pool.query(query, [status, rejectionReason, notes, id]);
+    const result = await pool.query(query, [status, rejectionReason, notes, req.user.id, id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -503,7 +993,6 @@ async function createAgentAccount(applicationId) {
     
     // Generate temporary password (they'll reset it on first login)
     const tempPassword = Math.random().toString(36).slice(-10);
-    const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     
     // Create user account
@@ -571,4 +1060,5 @@ app.listen(PORT, () => {
   console.log(`SigningConnect API server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
   console.log(`Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+  console.log(`JWT Secret: ${JWT_SECRET ? 'Configured' : 'Using default (change in production!)'}`);
 });

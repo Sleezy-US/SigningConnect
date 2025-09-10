@@ -85,7 +85,7 @@ async function runMigration() {
         notes TEXT
       )
     `);
-    console.log('✓ Applications table created');
+    console.log('✅ Applications table created');
 
     // Create users table
     await client.query(`
@@ -102,13 +102,18 @@ async function runMigration() {
         profile JSONB,
         application_id INTEGER REFERENCES applications(id),
         
+        -- Authentication fields for password reset
+        reset_token VARCHAR(64),
+        reset_token_expiry TIMESTAMP,
+        last_logout TIMESTAMP,
+        
         total_jobs_completed INTEGER DEFAULT 0,
         average_rating DECIMAL(3,2) DEFAULT 0.0,
         on_time_percentage INTEGER DEFAULT 100,
         total_earnings INTEGER DEFAULT 0
       )
     `);
-    console.log('✓ Users table created');
+    console.log('✅ Users table created');
 
     // Create jobs table
     await client.query(`
@@ -146,7 +151,7 @@ async function runMigration() {
         paid_at TIMESTAMP
       )
     `);
-    console.log('✓ Jobs table created');
+    console.log('✅ Jobs table created');
 
     // Create documents table
     await client.query(`
@@ -174,7 +179,7 @@ async function runMigration() {
         storage_path TEXT NOT NULL
       )
     `);
-    console.log('✓ Documents table created');
+    console.log('✅ Documents table created');
 
     // Create job applications table
     await client.query(`
@@ -195,7 +200,7 @@ async function runMigration() {
         UNIQUE(job_id, agent_id)
       )
     `);
-    console.log('✓ Job applications table created');
+    console.log('✅ Job applications table created');
 
     // Create reviews table
     await client.query(`
@@ -216,7 +221,7 @@ async function runMigration() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✓ Reviews table created');
+    console.log('✅ Reviews table created');
 
     // Create notifications table
     await client.query(`
@@ -239,7 +244,7 @@ async function runMigration() {
         read_at TIMESTAMP
       )
     `);
-    console.log('✓ Notifications table created');
+    console.log('✅ Notifications table created');
 
     // Create audit log table
     await client.query(`
@@ -256,7 +261,7 @@ async function runMigration() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✓ Audit log table created');
+    console.log('✅ Audit log table created');
 
     // Create indexes for performance
     console.log('Creating database indexes...');
@@ -282,7 +287,7 @@ async function runMigration() {
     await client.query('CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at)');
 
-    console.log('✓ Database indexes created');
+    console.log('✅ Database indexes created');
 
     // Create update timestamp function and triggers
     console.log('Setting up database triggers...');
@@ -316,3 +321,90 @@ async function runMigration() {
       CREATE TRIGGER update_jobs_updated_at 
       BEFORE UPDATE ON jobs 
       FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    `);
+
+    console.log('✅ Database triggers created');
+
+    // Create initial admin user
+    console.log('Creating initial admin user...');
+    
+    const bcrypt = require('bcryptjs');
+    const adminEmail = 'admin@signingconnect.com';
+    const adminPassword = 'admin123'; // Change this in production!
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
+    
+    const adminProfile = {
+      firstName: 'System',
+      lastName: 'Administrator',
+      role: 'Super Admin',
+      permissions: ['all']
+    };
+
+    try {
+      await client.query(`
+        INSERT INTO users (email, password_hash, user_type, profile, status)
+        VALUES ($1, $2, 'admin', $3, 'active')
+        ON CONFLICT (email) DO NOTHING
+      `, [adminEmail, hashedPassword, JSON.stringify(adminProfile)]);
+      
+      console.log('✅ Admin user created');
+      console.log('📧 Admin Email: admin@signingconnect.com');
+      console.log('🔑 Admin Password: admin123');
+      console.log('⚠️  Please change the admin password after first login!');
+    } catch (error) {
+      console.log('ℹ️  Admin user already exists');
+    }
+
+    // Database statistics
+    console.log('\n📊 Database Statistics:');
+    
+    const tables = [
+      'applications', 'users', 'jobs', 'documents', 
+      'job_applications', 'reviews', 'notifications', 'audit_log'
+    ];
+    
+    for (const table of tables) {
+      try {
+        const result = await client.query(`SELECT COUNT(*) FROM ${table}`);
+        console.log(`   ${table}: ${result.rows[0].count} records`);
+      } catch (error) {
+        console.log(`   ${table}: Error counting records`);
+      }
+    }
+
+    console.log('\n🎉 Database migration completed successfully!');
+    console.log('\nNext steps:');
+    console.log('1. Update your AuthComponents.js with real API integration');
+    console.log('2. Deploy your updated application');
+    console.log('3. Test the authentication flow');
+    console.log('4. Change the default admin password');
+
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+    pool.end();
+  }
+}
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+// Run the migration
+if (require.main === module) {
+  runMigration()
+    .then(() => {
+      console.log('Migration script completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Migration script failed:', error);
+      process.exit(1);
+    });
+}
+
+module.exports = { runMigration };
