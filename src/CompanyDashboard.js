@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { 
-  Plus, Filter, Eye, MapPin, Clock, DollarSign, FileText, User, Calendar, 
-  Bell, CheckCircle, X, Upload, Lock, Download, AlertTriangle, CreditCard,
-  Star, TrendingUp, Camera, MessageSquare, Shield, Award, Zap,
-  ChevronDown, BarChart3, Users, Activity, ThumbsUp, ThumbsDown
+  Plus, Filter, MapPin, Clock, FileText, User, Calendar, 
+  Bell, CheckCircle, X, AlertTriangle, CreditCard,
+  Star, TrendingUp, Camera, MessageSquare,
+  BarChart3, Users, Activity, ThumbsUp
 } from 'lucide-react';
 
 const EnhancedCompanyDashboard = () => {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [showJobPostForm, setShowJobPostForm] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
 
@@ -110,20 +109,6 @@ const EnhancedCompanyDashboard = () => {
     { id: 'completion', name: 'Pay on Completion', fee: '1.5%', description: 'Automatic payment when job is marked complete' }
   ]);
 
-  const [analytics] = useState({
-    weeklyJobs: [15, 18, 22, 19, 25, 21, 20],
-    agentPerformance: [
-      { name: 'John Smith', jobs: 12, rating: 4.8, onTime: 100 },
-      { name: 'Sarah Johnson', jobs: 15, rating: 4.9, onTime: 98 },
-      { name: 'Mike Rodriguez', jobs: 8, rating: 4.7, onTime: 95 }
-    ],
-    costComparison: {
-      traditional: 180,
-      platform: 150,
-      savings: 30
-    }
-  });
-
   const getStatusBadge = (status) => {
     const statusConfig = {
       'open': { color: 'bg-blue-100 text-blue-800', text: 'Open', icon: Clock },
@@ -161,11 +146,8 @@ const EnhancedCompanyDashboard = () => {
     );
   };
 
-  const StatCard = ({ title, value, icon: Icon, color = 'blue', trend, subtitle, onClick }) => (
-    <div 
-      className={`bg-white rounded-lg shadow p-6 ${onClick ? 'cursor-pointer hover:shadow-lg' : ''} transition-shadow`}
-      onClick={onClick}
-    >
+  const StatCard = ({ title, value, icon: Icon, color = 'blue', trend, subtitle }) => (
+    <div className="bg-white rounded-lg shadow p-6 transition-shadow">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-600">{title}</p>
@@ -461,7 +443,6 @@ const EnhancedCompanyDashboard = () => {
             
             <div className="flex items-center space-x-4">
               <button 
-                onClick={() => setShowJobPostForm(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -549,10 +530,7 @@ const EnhancedCompanyDashboard = () => {
                   <Filter className="w-4 h-4 mr-2" />
                   Filter
                 </button>
-                <button 
-                  onClick={() => setShowJobPostForm(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-                >
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
                   <Plus className="w-4 h-4 mr-2" />
                   Post Job
                 </button>
