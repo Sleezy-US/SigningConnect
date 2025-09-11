@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, FileText, CheckCircle, XCircle, Clock, Eye, Search, Filter, 
-  Bell, LogOut, BarChart3, DollarSign, MapPin, Phone, Mail, Calendar,
-  Download, AlertTriangle, User, Shield, Building
+  FileText, CheckCircle, XCircle, Clock, Search, 
+  Bell, LogOut, BarChart3, DollarSign, MapPin,
+  User, Shield
 } from 'lucide-react';
 import { useAuth } from './AuthComponents';
 
@@ -21,11 +21,7 @@ const AdminDashboard = () => {
     total: 0
   });
 
-  useEffect(() => {
-    fetchApplications();
-  }, []); // Empty dependency array is correct here
-
-  const fetchApplications = async () => {
+  const fetchApplications = React.useCallback(async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('signingconnect_token');
@@ -47,7 +43,11 @@ const AdminDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
 
   const calculateStats = (apps) => {
     const stats = {
