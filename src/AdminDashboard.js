@@ -21,10 +21,9 @@ const AdminDashboard = () => {
     total: 0
   });
 
-  // Fetch applications on component mount
   useEffect(() => {
     fetchApplications();
-  }, []);
+  }, []); // Empty dependency array is correct here
 
   const fetchApplications = async () => {
     try {
