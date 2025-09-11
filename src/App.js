@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth, LoginModal, RegisterModal, ForgotPasswordModal, ProtectedRoute } from './AuthComponents';
 import AgentDashboard from './AgentDashboard';
 import CompanyDashboard from './CompanyDashboard';
+import AdminDashboard from './AdminDashboard';
 import ProfessionalRegistration from './ProfessionalRegistration';
 import { useState } from 'react';
 
@@ -223,8 +224,10 @@ const AuthenticatedApp = () => {
     return <Navigate to="/company" replace />;
   } else if (user.userType === 'agent') {
     return <Navigate to="/agent" replace />;
-  } else {
+  } else if (user.userType === 'admin') {
     return <Navigate to="/admin" replace />;
+  } else {
+    return <Navigate to="/" replace />;
   }
 };
 
@@ -250,6 +253,14 @@ function App() {
             element={
               <ProtectedRoute requiredUserType="company">
                 <CompanyDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute requiredUserType="admin">
+                <AdminDashboard />
               </ProtectedRoute>
             } 
           />
