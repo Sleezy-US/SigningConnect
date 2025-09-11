@@ -12,6 +12,8 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', true); // Fix for Railway proxy headers
+
 const PORT = process.env.PORT || 3001;
 
 // JWT secret
@@ -203,7 +205,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
   }
 });
 
-// Login endpoint
+// Enhanced login endpoint with admin support
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     const { email, password, userType } = req.body;
@@ -215,13 +217,29 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
       });
     }
 
-    const userQuery = `
-      SELECT id, email, password_hash, user_type, profile, status, last_login 
-      FROM users 
-      WHERE email = $1 AND user_type = $2
-    `;
+    // For admin users, check both the selected userType and 'admin' type
+    let userQuery;
+    let queryParams;
     
-    const result = await pool.query(userQuery, [email, userType]);
+    if (email === 'admin@signingconnect.com') {
+      // Admin can login through either company or agent selection
+      userQuery = `
+        SELECT id, email, password_hash, user_type, profile, status, last_login 
+        FROM users 
+        WHERE email = $1 AND (user_type = $2 OR user_type = 'admin')
+      `;
+      queryParams = [email, userType];
+    } else {
+      // Regular users must match exact user type
+      userQuery = `
+        SELECT id, email, password_hash, user_type, profile, status, last_login 
+        FROM users 
+        WHERE email = $1 AND user_type = $2
+      `;
+      queryParams = [email, userType];
+    }
+    
+    const result = await pool.query(userQuery, queryParams);
     
     if (result.rows.length === 0) {
       return res.status(401).json({
@@ -260,7 +278,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    console.log('User logged in:', email, 'Type:', userType);
+    console.log('User logged in:', email, 'Type:', user.user_type);
 
     res.json({
       success: true,
@@ -515,6 +533,72 @@ app.post('/api/applications/submit', async (req, res) => {
     }
   } finally {
     client.release();
+  }
+});
+
+// Admin: Get all applications
+app.get('/api/admin/applications', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.user_type !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    const { status, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    let query = `
+      SELECT 
+        id,
+        application_id,
+        first_name,
+        last_name,
+        email,
+        phone,
+        status,
+        years_experience,
+        monthly_volume,
+        created_at,
+        updated_at
+      FROM applications
+    `;
+    
+    const params = [];
+    
+    if (status) {
+      query += ' WHERE status = $1';
+      params.push(status);
+    }
+    
+    query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+    
+    const result = await pool.query(query, params);
+    
+    const countQuery = 'SELECT COUNT(*) FROM applications' + (status ? ' WHERE status = $1' : '');
+    const countParams = status ? [status] : [];
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].count);
+    
+    res.json({
+      success: true,
+      applications: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+    
+  } catch (error) {
+    console.error('Admin applications fetch error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch applications'
+    });
   }
 });
 
